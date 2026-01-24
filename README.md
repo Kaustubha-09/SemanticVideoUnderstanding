@@ -30,6 +30,11 @@ This project implements and compares two approaches to video understanding using
 - **Baseline Approach**: Each frame is described independently, leading to redundant information across frames
 - **Semantic Diff Approach**: Only changes between consecutive frames are described, reducing token consumption while maintaining temporal dynamics
 
+> **📹 Demo Video**: Try the project with the presentation slides video. Place your video in `demo_videos/` and run:
+> ```bash
+> python semantic_diff_demo.py demo_videos/presentation_slides.mp4
+> ```
+
 ### Key Benefits
 
 - 🎯 **Token Efficiency**: Achieves 50-70% token reduction compared to baseline methods
@@ -120,8 +125,11 @@ python semantic_diff_demo.py path/to/your/video.mp4
 # Process a video file
 python semantic_diff_demo.py "/path/to/video.mp4"
 
-# Process presentation slides video
-python semantic_diff_demo.py "/Users/kaustubha/Downloads/presentation slides.mp4"
+# Process presentation slides video (place video in demo_videos/ first)
+python semantic_diff_demo.py demo_videos/presentation_slides.mp4
+
+# Or use absolute path if video is elsewhere
+python semantic_diff_demo.py "/path/to/presentation slides.mp4"
 
 # Quick test with limited frames
 python semantic_diff_demo.py video.mp4 --max-frames 10
@@ -233,6 +241,12 @@ SemanticVideoUnderstanding/
 ├── requirements.txt         # Python dependencies
 ├── README.md                # This file
 ├── Project_Proposal.pdf     # Original project proposal
+├── docs/                    # Documentation and diagrams
+│   └── images/             # Visual diagrams and examples
+│       ├── traditional_challenges.png
+│       ├── semantic_diff_concept.png
+│       ├── semantic_diff_output.png
+│       └── processing_pipeline.png
 │
 ├── test_frame_diff/         # Sample test frames (4 PNG files)
 │   ├── diff_test_01.png
@@ -241,6 +255,9 @@ SemanticVideoUnderstanding/
 │   └── diff_test_04.png
 │
 ├── test_img1.jpg           # Sample test image
+│
+├── demo_videos/            # Demo videos (e.g., presentation slides)
+│   └── presentation_slides.mp4  # Place demo videos here
 │
 ├── test_videos/            # Sample video dataset (organized by action)
 │   ├── Bending something so that it deforms/
@@ -289,6 +306,10 @@ Each frame is described independently, leading to redundant information being re
 
 **Example:** If a person is walking through a scene, their presence, the background, and scene elements are described in every frame.
 
+![Traditional Video Captioning Challenges](docs/images/traditional_challenges.png)
+
+*Traditional frame-by-frame captioning can lead to hallucinations and redundant descriptions, as shown in the diagram above.*
+
 ### Semantic Diff Approach
 
 Only changes between consecutive frames are described:
@@ -297,6 +318,10 @@ Only changes between consecutive frames are described:
 - **Subsequent frames**: Only describe what changed (movement, new objects, state changes)
 - **Static elements**: Background and unchanged objects are not repeated
 - **Result**: Significant token reduction while preserving temporal dynamics
+
+![Semantic Diff Prompting: Core Concept](docs/images/semantic_diff_concept.png)
+
+*The semantic diff approach compares consecutive frames and describes only the changes, avoiding repetition of static elements and preventing hallucinations.*
 
 ### Example Comparison
 
@@ -325,6 +350,10 @@ Consider a video of a person walking through a scene:
 - **Diff**: Only describes changes (movement) → **50-70% token reduction**
 
 The diff approach focuses on temporal changes, avoiding repetition of static scene elements while preserving all dynamic information.
+
+![Semantic Diff Output Example](docs/images/semantic_diff_output.png)
+
+*Real example output showing how semantic diff descriptions focus on changes (pasta removal, hand appearance, flour addition) while baseline descriptions repeat static scene elements.*
 
 ---
 
@@ -435,6 +464,12 @@ Typical results show:
 - **Processing Time**: Similar to baseline (API call overhead is the same)
 
 ## 🔬 Methodology
+
+![Overall Processing Pipeline](docs/images/processing_pipeline.png)
+
+*The complete processing pipeline showing both baseline and diff-prompting paths, with evaluation and final results.*
+
+### Processing Steps
 
 1. **Frame Extraction**: Extract frames from video at specified intervals
 2. **Baseline Processing**: Describe each frame independently using VLM

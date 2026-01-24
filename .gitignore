@@ -4,3 +4,10 @@ extracted_images/
 outputs/
 venv/
 *.pyc
+
+# Demo videos (large files - add to .gitignore)
+demo_videos/*.mp4
+demo_videos/*.avi
+demo_videos/*.mov
+demo_videos/*.webm
+!demo_videos/README.md
