@@ -1,2 +1,6 @@
 __pycache__/
 .env
+extracted_images/
+outputs/
+venv/
+*.pyc
