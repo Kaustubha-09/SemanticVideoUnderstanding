@@ -459,7 +459,7 @@ This project is part of a course assignment for CS6180: Generative AI.
 
 ## 📮 Contact & Contributions
 
-**Author:** Kaustubha V E
+**Author:** Kaustubha Eluri
 
 - 📧 **Email**: [kaustubha.ev@gmail.com](mailto:kaustubha.ev@gmail.com)
 - 🌐 **Portfolio**: [kaustubha-09.github.io](https://kaustubha-09.github.io)
