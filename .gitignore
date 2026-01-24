@@ -4,6 +4,7 @@ extracted_images/
 outputs/
 venv/
 *.pyc
+.DS_Store
 
 # Demo videos (large files - add to .gitignore)
 demo_videos/*.mp4

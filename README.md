@@ -17,7 +17,6 @@ A comparative study of baseline frame-by-frame video understanding versus semant
 - [How It Works](#-how-it-works)
 - [Features](#-features)
 - [Project Structure](#️-project-structure)
-- [Output](#-output)
 - [Requirements](#-requirements)
 - [Troubleshooting](#-troubleshooting)
 
@@ -172,9 +171,9 @@ python vision_test.py
 
 This processes `test_img1.jpg` with the vision model.
 
----
+### How It Works
 
-## 📊 What the Script Does
+The script processes videos/images through these steps:
 
 1. **Extracts frames** from video (or loads images from folder/file)
 2. **Runs baseline prompting** - describes each frame independently
@@ -185,17 +184,15 @@ This processes `test_img1.jpg` with the vision model.
 
 > **Note:** The script includes a 3-second delay between API calls to prevent rate limiting. Processing many frames may take some time.
 
----
+#### Command-Line Arguments
 
-## ⚙️ Command-Line Arguments
-
-### Positional Arguments
+**Positional Arguments:**
 
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `input` | Path to video file, image folder, or single image file | `test_frame_diff` |
 
-### Optional Arguments
+**Optional Arguments:**
 
 | Flag | Description | Default | Example |
 |------|-------------|---------|---------|
@@ -208,26 +205,9 @@ This processes `test_img1.jpg` with the vision model.
 - `gpt-4o` - Higher quality, higher cost
 - `gpt-4-vision-preview` - Legacy vision model
 
----
+#### Output
 
-## 📤 Output
-
-### Console Output
-
-The script displays:
-- Frame extraction/loading progress
-- Side-by-side comparison of baseline vs diff descriptions for each frame
-- Token statistics:
-  - Total tokens (baseline approach)
-  - Total tokens (diff approach)
-  - Token reduction amount and percentage
-
-### Saved Results
-
-Results are automatically saved to `outputs/results_YYYYMMDD_HHMMSS.txt` containing:
-- Complete frame-by-frame comparison
-- Token statistics
-- Timestamp for tracking
+The script displays progress and side-by-side comparisons in the terminal, then saves results to `outputs/results_YYYYMMDD_HHMMSS.txt` with complete frame-by-frame comparisons and token statistics.
 
 ---
 
@@ -445,19 +425,11 @@ pip install openai pillow transformers tiktoken opencv-python
 
 ---
 
-## 🎓 Use Cases
+## 🎓 Use Cases & Performance
 
-This project is useful for:
+This project is useful for video summarization, action recognition, cost optimization, research, and content analysis.
 
-- **Video Summarization**: Generate concise summaries of video content
-- **Action Recognition**: Identify and describe actions in video sequences
-- **Cost Optimization**: Reduce API costs for video understanding tasks
-- **Research**: Study token efficiency in vision-language models
-- **Content Analysis**: Analyze video content for accessibility or documentation
-
-## 📊 Performance Metrics
-
-Typical results show:
+**Typical Performance:**
 - **Token Reduction**: 50-70% compared to baseline
 - **Cost Savings**: Proportional to token reduction
 - **Accuracy**: Maintains temporal information while reducing redundancy
@@ -469,14 +441,7 @@ Typical results show:
 
 *The complete processing pipeline showing both baseline and diff-prompting paths, with evaluation and final results.*
 
-### Processing Steps
-
-1. **Frame Extraction**: Extract frames from video at specified intervals
-2. **Baseline Processing**: Describe each frame independently using VLM
-3. **Diff Processing**: Compare consecutive frames and describe only changes
-4. **Token Counting**: Use tiktoken for accurate GPT-4 token counting
-5. **Comparison**: Generate side-by-side comparison and statistics
-6. **Persistence**: Save results with timestamps for analysis
+The methodology follows these steps: frame extraction, baseline processing (independent descriptions), diff processing (change-only descriptions), token counting with tiktoken, comparison generation, and result persistence.
 
 ## 📝 License
 
@@ -494,6 +459,12 @@ This project is part of a course assignment for CS6180: Generative AI.
 
 ## 📮 Contact & Contributions
 
-For questions, issues, or contributions related to this project, please refer to the course materials or contact the course instructors.
+**Author:** Kaustubha V E
+
+- 📧 **Email**: [kaustubha.ev@gmail.com](mailto:kaustubha.ev@gmail.com)
+- 🌐 **Portfolio**: [kaustubha-09.github.io](https://kaustubha-09.github.io)
+- 💼 **LinkedIn**: [linkedin.com/in/kaustubha-ve](https://linkedin.com/in/kaustubha-ve)
+
+For questions, issues, or contributions related to this project, feel free to reach out!
 
 **Note:** This is an academic project. For production use, consider additional optimizations, error handling, and scalability improvements.
