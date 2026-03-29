@@ -6,6 +6,11 @@ from typing import Optional
 from PIL import Image
 from openai import OpenAI, RateLimitError, APIError
 
+MAX_RETRIES: int = 5
+BACKOFF_BASE: int = 2
+API_ERROR_SLEEP: int = 5
+DEFAULT_MAX_TOKENS: int = 200
+
 class VLMClient:
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini"):
         if api_key:
@@ -26,20 +31,20 @@ class VLMClient:
         img.save(buf, format="JPEG")
         return base64.b64encode(buf.getvalue()).decode("utf-8")
 
-    def safe_openai_call(self, fn, retries=5):
+    def safe_openai_call(self, fn, retries: int = MAX_RETRIES) -> str:
         for i in range(retries):
             try:
                 return fn()
             except RateLimitError as e:
-                wait_time = 2 ** i
-                print(f"⚠️ Rate limit hit. Retrying in {wait_time}s...")
+                wait_time = BACKOFF_BASE ** i
+                print(f"Rate limit hit. Retrying in {wait_time}s...")
                 time.sleep(wait_time)
             except APIError as e:
-                print(f"⚠️ OpenAI API error: {e}. Retrying in 5s...")
-                time.sleep(5)
-        raise RuntimeError("❌ Failed after multiple retries due to rate limits or API errors.")
+                print(f"OpenAI API error: {e}. Retrying in {API_ERROR_SLEEP}s...")
+                time.sleep(API_ERROR_SLEEP)
+        raise RuntimeError("Failed after multiple retries due to rate limits or API errors.")
 
-    def describe_single(self, image: Image.Image, prompt: str, max_tokens: int = 200) -> str:
+    def describe_single(self, image: Image.Image, prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
         img_b64 = self.pil_to_base64(image)
 
         def call():
@@ -64,7 +69,7 @@ class VLMClient:
         return resp.choices[0].message.content
 
     def describe_pair(self, prev_image: Image.Image, curr_image: Image.Image,
-                      prompt: str, max_tokens: int = 200) -> str:
+                      prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
         prev_b64 = self.pil_to_base64(prev_image)
         curr_b64 = self.pil_to_base64(curr_image)
 

@@ -4,14 +4,22 @@ from io import BytesIO
 from PIL import Image
 from openai import OpenAI
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 def pil_to_base64(img: Image.Image) -> str:
     buf = BytesIO()
     img.save(buf, format="JPEG")
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
-def main():
+
+def main() -> None:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY environment variable not set. "
+            "Get your key at: https://platform.openai.com/account/api-keys"
+        )
+    client = OpenAI(api_key=api_key)
+
     img_path = "test_img1.jpg"
     img = Image.open(img_path).convert("RGB")
     img_b64 = pil_to_base64(img)
@@ -34,6 +42,7 @@ def main():
     )
 
     print(resp.choices[0].message.content)
+
 
 if __name__ == "__main__":
     main()
