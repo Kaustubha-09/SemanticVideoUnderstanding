@@ -1,216 +1,60 @@
 # Semantic Diff Prompting for Video Understanding
 
-> **Final Project for CS6180: Generative AI**
+> A comparative study of baseline frame-by-frame video understanding versus *semantic diff* prompting — describing only what changes between consecutive frames. Achieves 50–70% token reduction while preserving temporal information.
 
-A comparative study of baseline frame-by-frame video understanding versus semantic diff prompting, demonstrating significant token reduction while preserving temporal information.
+[![Python](https://img.shields.io/badge/Python-3.7%2B-blue?logo=python)](https://www.python.org/downloads/)
+[![OpenAI](https://img.shields.io/badge/Model-GPT--4o-orange?logo=openai)](https://openai.com)
+[![License](https://img.shields.io/badge/license-Course%20Project-lightgrey)](#license)
 
-[![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/downloads/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-orange.svg)](https://openai.com/)
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-- [How It Works](#how-it-works)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Requirements](#requirements)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
+**Final project for CS6180: Generative AI** at Northeastern University. The baseline asks GPT-4o `"Describe this frame."` for every frame — redundantly re-describing static elements every time. The semantic diff approach describes only what *changed* between consecutive frames, dropping token cost without losing the dynamic information.
 
 ---
 
-## Overview
+## Screenshots
 
-This project implements and compares two approaches to video understanding using vision language models:
+| Baseline problem | Diff concept |
+|:-:|:-:|
+| <img src="Screenshots/01_traditional_challenges.png" width="320" /> | <img src="Screenshots/02_semantic_diff_concept.png" width="320" /> |
 
-- **Baseline Approach**: Each frame is described independently, leading to redundant information across frames
-- **Semantic Diff Approach**: Only changes between consecutive frames are described, reducing token consumption while maintaining temporal dynamics
-
-> **Demo**: Try the project with any video. Place it in `demo_videos/` and run:
-> ```bash
-> python main.py demo_videos/your_video.mp4 --max-frames 10
-> ```
-
-### Key Benefits
-
-- **Token Efficiency**: Achieves 50-70% token reduction compared to baseline methods
-- **Cost Savings**: Lower API costs due to reduced token usage
-- **Temporal Focus**: Captures dynamic changes while ignoring static elements
-- **Visual Output**: Token comparison chart saved automatically to `plots/`
-- **Comprehensive Comparison**: Side-by-side analysis of both approaches with formatted statistics
+| Output comparison | Pipeline |
+|:-:|:-:|
+| <img src="Screenshots/03_semantic_diff_output.png" width="320" /> | <img src="Screenshots/04_processing_pipeline.png" width="320" /> |
 
 ---
 
-## Quick Start
+## Features
 
-### Prerequisites
-
-- Python 3.7 or higher
-- OpenAI API key ([Get one here](https://platform.openai.com/account/api-keys))
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd SemanticVideoUnderstanding
-   ```
-
-2. **Create a virtual environment** (recommended)
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set your OpenAI API key**
-
-   macOS/Linux:
-   ```bash
-   export OPENAI_API_KEY="sk-your-actual-api-key-here"
-   ```
-
-   Windows (Command Prompt):
-   ```cmd
-   set OPENAI_API_KEY=sk-your-actual-api-key-here
-   ```
-
-   Windows (PowerShell):
-   ```powershell
-   $env:OPENAI_API_KEY="sk-your-actual-api-key-here"
-   ```
-
-5. **Run the demo**
-   ```bash
-   python main.py
-   ```
+- **Multiple input types** — video files (mp4, avi, mov, mkv, flv, wmv, webm, m4v), image folders, single images.
+- **Flexible frame sampling** — `--max-frames N` and `--frame-interval N` to control cost on long videos.
+- **Token efficiency** — 50–70% reduction vs. baseline by skipping repeated static-element descriptions.
+- **Side-by-side comparison** — terminal output shows baseline vs. diff per frame with aligned statistics.
+- **Accurate token counting** — `tiktoken` (GPT-4 tokenizer) with GPT-2 fallback.
+- **Auto-saved artifacts** — timestamped result text files in `outputs/`, token comparison bar chart in `plots/`.
+- **Resilient API client** — automatic retry with exponential backoff on rate limits.
+- **18 pytest tests** — covering token counting, frame loading, sort order, API key validation, base64 encoding, token arithmetic. No network or API key required to run them.
 
 ---
 
-## Usage
+## Architecture
 
-### Entry Point
+### Five-step pipeline
 
-All runs go through `main.py`:
+1. **Frame extraction** — OpenCV reads frames from video, or PIL loads images from a folder.
+2. **Baseline prompting** — calls GPT-4o once per frame with `"Describe this frame."`.
+3. **Semantic diff prompting** — calls GPT-4o with each consecutive frame pair, asking only for changes.
+4. **Token analysis** — counts tokens with `tiktoken`.
+5. **Output** — prints formatted comparison, saves results text file + bar chart.
 
-```bash
-python main.py [input] [--max-frames N] [--frame-interval N] [--model MODEL]
-```
+### Baseline vs. diff
 
-`semantic_diff_demo.py` also works directly and exposes the same CLI.
+**Baseline:** every frame is described independently. Static elements (background, fixed objects) are re-described in every response.
 
-### Input Types
+**Semantic diff:**
+- First frame: full description (no previous frame to compare).
+- Subsequent frames: only what changed — movement, new objects, state changes.
+- Static elements: never repeated.
 
-#### Video files
-
-```bash
-python main.py path/to/video.mp4
-```
-
-Supported formats: `.mp4`, `.avi`, `.mov`, `.mkv`, `.flv`, `.wmv`, `.webm`, `.m4v`
-
-```bash
-# Quick test — first 10 frames only
-python main.py video.mp4 --max-frames 10
-
-# Sample every 5th frame (useful for long videos)
-python main.py video.mp4 --frame-interval 5
-
-# Higher-quality model
-python main.py video.mp4 --model gpt-4o
-
-# Combine options
-python main.py video.mp4 --frame-interval 3 --max-frames 20
-```
-
-#### Image folders
-
-```bash
-python main.py path/to/image/folder
-
-# Default test folder
-python main.py                   # uses test_frame_diff/
-python main.py test_frame_diff   # explicit
-```
-
-#### Single image
-
-```bash
-python main.py path/to/image.jpg
-```
-
-### CLI Reference
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `input` | Path to video file, image folder, or single image | `test_frame_diff` |
-| `--max-frames N` | Maximum number of frames to process | all frames |
-| `--frame-interval N` | Extract every Nth frame (1 = all, 5 = every 5th) | `1` |
-| `--model MODEL` | OpenAI model to use | `gpt-4o-mini` |
-
-**Available models:**
-- `gpt-4o-mini` (default) — cost-effective, good performance
-- `gpt-4o` — higher quality, higher cost
-- `gpt-4-vision-preview` — legacy vision model
-
-### Output
-
-After each run the script produces:
-
-| Output | Location | Description |
-|--------|----------|-------------|
-| Terminal comparison | stdout | Formatted side-by-side baseline vs. diff per frame |
-| Token statistics table | stdout | Aligned table with counts and reduction % |
-| Results file | `outputs/results_YYYYMMDD_HHMMSS.txt` | Full frame-by-frame text comparison |
-| Token plot | `plots/token_comparison.png` | Bar chart — baseline vs. diff token counts |
-
-### Simple Vision Test
-
-Verify your API setup independently:
-
-```bash
-python vision_test.py
-```
-
-Describes `test_img1.jpg` using the vision model.
-
----
-
-## How It Works
-
-The script processes inputs in five steps:
-
-1. **Frame extraction** — reads frames from video (OpenCV) or loads images from folder
-2. **Baseline prompting** — calls GPT-4o once per frame with `"Describe this frame."`
-3. **Semantic diff prompting** — calls GPT-4o with each consecutive frame pair, asking only for changes
-4. **Token analysis** — counts tokens with `tiktoken` (falls back to GPT-2 tokenizer if unavailable)
-5. **Output** — prints formatted results, saves text file and bar chart
-
-### Baseline Approach
-
-Each frame is described independently, so static elements (background, fixed objects) are repeated in every response.
-
-![Traditional Video Captioning Challenges](docs/images/traditional_challenges.png)
-
-### Semantic Diff Approach
-
-Only changes between consecutive frames are described:
-
-- **First frame**: receives a full description (no previous frame to compare)
-- **Subsequent frames**: only what changed is described — movement, new objects, state changes
-- **Static elements**: background and unchanged objects are never repeated
-
-![Semantic Diff Prompting: Core Concept](docs/images/semantic_diff_concept.png)
-
-### Example Comparison
+#### Example
 
 **Frame 1:**
 ```
@@ -230,97 +74,142 @@ Baseline : "A person is walking on a sidewalk. There are trees in the background
 Diff     : "The person continues walking. Left leg now extended forward."
 ```
 
-The baseline repeats the full scene every frame. The diff describes only motion — a 50-70% token reduction.
-
-![Semantic Diff Output Example](docs/images/semantic_diff_output.png)
-
-### Processing Pipeline
-
-![Overall Processing Pipeline](docs/images/processing_pipeline.png)
-
----
-
-## Features
-
-- Multiple input formats: video files, image folders, single images
-- Flexible frame sampling: `--max-frames` and `--frame-interval` flags
-- Robust error handling: automatic retry with exponential backoff on rate limits
-- Accurate token counting: `tiktoken` (GPT-4 tokenizer) with GPT-2 fallback
-- Formatted terminal output: aligned token statistics table
-- Token comparison plot: bar chart saved to `plots/token_comparison.png`
-- Persistent results: timestamped output files in `outputs/`
-- Unit tests: 18 pytest tests covering core logic and edge cases
-
----
-
-## Project Structure
+### Project structure
 
 ```
 SemanticVideoUnderstanding/
-├── main.py                  # Entry point — delegates to semantic_diff_demo.main()
-├── semantic_diff_demo.py    # Core logic: frame extraction, prompting, analysis
-├── vlm_client.py            # OpenAI API wrapper with retry and encoding
-├── vision_test.py           # Standalone API connectivity test
-├── requirements.txt         # Python dependencies
-├── README.md                # This file
-├── Project_Proposal.pdf     # Original CS6180 project proposal
+├── main.py                  Entry point — delegates to semantic_diff_demo.main()
+├── semantic_diff_demo.py    Core: frame extraction, prompting, analysis
+├── vlm_client.py            OpenAI API wrapper with retry + encoding
+├── vision_test.py           Standalone API connectivity test
+├── requirements.txt
+├── Screenshots/             Diagrams referenced from this README
+├── Project_Proposal.pdf     Original CS6180 proposal
 │
 ├── tests/
 │   ├── __init__.py
-│   └── test_core.py         # 18 pytest unit tests
+│   └── test_core.py         18 pytest unit tests
 │
-├── docs/images/             # Visual diagrams
-│   ├── traditional_challenges.png
-│   ├── semantic_diff_concept.png
-│   ├── semantic_diff_output.png
-│   └── processing_pipeline.png
+├── test_frame_diff/         Sample test frames (4 PNG files)
+├── test_img1.jpg            Sample test image for vision_test.py
+├── demo_videos/             Place demo videos here
+├── test_videos/             Action-labeled WebM dataset (141 videos, 8 categories)
 │
-├── test_frame_diff/         # Sample test frames (4 PNG files)
-├── test_img1.jpg            # Sample test image for vision_test.py
-├── demo_videos/             # Place demo videos here
-├── test_videos/             # Action-labeled WebM dataset (141 videos, 8 categories)
-│
-├── outputs/                 # Auto-created — timestamped result text files
-└── plots/                   # Auto-created — token comparison bar charts
+├── outputs/                 Auto-created — timestamped result text files
+└── plots/                   Auto-created — token comparison bar charts
 ```
 
 ---
 
-## Requirements
+## Tech Stack
 
-- Python 3.7 or higher
-- OpenAI API key
+| Dependency | Purpose |
+|---|---|
+| `openai>=1.0.0` | GPT-4o vision API client |
+| `pillow>=10.0.0` | Image loading + base64 encoding |
+| `transformers>=4.30.0` | GPT-2 fallback tokenizer |
+| `tiktoken>=0.5.0` | Accurate GPT-4 token counting |
+| `opencv-python>=4.8.0` | Video frame extraction |
+| `PyMuPDF>=1.23.0` | PDF support (proposal-related tooling) |
+| `matplotlib>=3.7.0` | Bar chart for token comparison |
+| `pytest>=7.0.0` | Unit tests |
 
-Dependencies (`requirements.txt`):
+---
 
+## Getting Started
+
+### Prerequisites
+
+- Python 3.7+
+- OpenAI API key — get one at <https://platform.openai.com/account/api-keys>
+
+### Setup
+
+```bash
+git clone <repository-url>
+cd SemanticVideoUnderstanding
+
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+
+pip install -r requirements.txt
+
+export OPENAI_API_KEY="sk-..."    # Windows CMD:  set OPENAI_API_KEY=sk-...
+                                  # Windows PS:   $env:OPENAI_API_KEY="sk-..."
 ```
-openai>=1.0.0
-pillow>=10.0.0
-transformers>=4.30.0
-tiktoken>=0.5.0
-opencv-python>=4.8.0
-PyMuPDF>=1.23.0
-matplotlib>=3.7.0
-pytest>=7.0.0
+
+### Run the demo
+
+```bash
+python main.py
 ```
+
+### Usage
+
+```bash
+python main.py [input] [--max-frames N] [--frame-interval N] [--model MODEL]
+```
+
+#### Video files
+
+```bash
+python main.py path/to/video.mp4
+python main.py video.mp4 --max-frames 10
+python main.py video.mp4 --frame-interval 5
+python main.py video.mp4 --model gpt-4o
+python main.py video.mp4 --frame-interval 3 --max-frames 20
+```
+
+#### Image folders
+
+```bash
+python main.py path/to/image/folder
+python main.py                   # uses test_frame_diff/
+```
+
+#### Single image
+
+```bash
+python main.py path/to/image.jpg
+```
+
+### CLI reference
+
+| Argument | Description | Default |
+|---|---|---|
+| `input` | Path to video, image folder, or single image | `test_frame_diff` |
+| `--max-frames N` | Max number of frames to process | all |
+| `--frame-interval N` | Extract every Nth frame | `1` |
+| `--model MODEL` | OpenAI model | `gpt-4o-mini` |
+
+Available models: `gpt-4o-mini` (default — cheap, good), `gpt-4o` (higher quality), `gpt-4-vision-preview` (legacy).
+
+### Outputs
+
+| Where | What |
+|---|---|
+| stdout | Per-frame baseline vs. diff comparison + token statistics table |
+| `outputs/results_YYYYMMDD_HHMMSS.txt` | Full text comparison |
+| `plots/token_comparison.png` | Bar chart of baseline vs. diff token counts |
+
+### Verify the API setup
+
+```bash
+python vision_test.py
+```
+
+Describes `test_img1.jpg` using the vision model — independent of the main pipeline.
 
 ---
 
 ## Testing
 
-Unit tests cover token counting, frame loading, sort order, API key validation, base64 encoding, and token reduction arithmetic.
-
 ```bash
 pytest tests/
+# Expected: 18 passed in 0.43s
 ```
 
-Expected output:
-
-```
-18 passed in 0.43s
-```
-
-Tests do not require an OpenAI API key and make no network calls.
+Tests do not require an API key and make no network calls.
 
 ---
 
@@ -329,18 +218,17 @@ Tests do not require an OpenAI API key and make no network calls.
 ### API key not found
 
 ```bash
-# Verify the key is set
 echo $OPENAI_API_KEY        # macOS/Linux
 echo %OPENAI_API_KEY%       # Windows CMD
 ```
 
-- Ensure the key starts with `sk-`
-- Set it in the same terminal session used to run the script
-- Activate your virtual environment before setting the key
+- Key must start with `sk-`.
+- Set in the same shell session as the run.
+- Activate the venv before exporting.
 
 ### Rate limiting
 
-The script retries automatically with exponential backoff. If errors persist:
+The client retries with exponential backoff. If errors persist:
 
 ```bash
 python main.py video.mp4 --max-frames 5 --frame-interval 10
@@ -354,11 +242,10 @@ pip install -r requirements.txt
 
 ### Video won't open
 
-- Confirm the path and file extension are correct
-- Supported formats: `.mp4`, `.avi`, `.mov`, `.mkv`, `.flv`, `.wmv`, `.webm`, `.m4v`
-- Update OpenCV: `pip install --upgrade opencv-python`
+- Confirm path + extension.
+- Update OpenCV: `pip install --upgrade opencv-python`.
 
-### Memory issues with large videos
+### Memory issues on large videos
 
 ```bash
 python main.py large_video.mp4 --max-frames 20 --frame-interval 10
@@ -366,26 +253,18 @@ python main.py large_video.mp4 --max-frames 20 --frame-interval 10
 
 ---
 
-## License
-
-This project is part of a course assignment for CS6180: Generative AI.
-
----
-
 ## Acknowledgments
 
-- **OpenAI** for the GPT-4o vision language model API
-- **Course Instructors** for project guidance and feedback
-- **Open Source Community** for the libraries used in this project
+- **OpenAI** for the GPT-4o vision language model API.
+- **Course instructors** for project guidance and feedback.
+- **Open-source community** for the libraries used.
 
 ---
 
-## Contact
+## License
 
-**Author:** Kaustubha Eluri
+Course project for CS6180: Generative AI. Released for academic / portfolio use.
 
-- **Email**: [kaustubha.ev@gmail.com](mailto:kaustubha.ev@gmail.com)
-- **Portfolio**: [kaustubha-09.github.io](https://kaustubha-09.github.io)
-- **LinkedIn**: [linkedin.com/in/kaustubha-ve](https://linkedin.com/in/kaustubha-ve)
+---
 
-For questions or issues related to this project, feel free to reach out.
+**Author:** Kaustubha Eluri · [kaustubha.ev@gmail.com](mailto:kaustubha.ev@gmail.com) · [kaustubha-09.github.io](https://kaustubha-09.github.io) · [linkedin.com/in/kaustubha-ve](https://linkedin.com/in/kaustubha-ve)
