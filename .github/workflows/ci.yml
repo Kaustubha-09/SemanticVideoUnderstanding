@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Python tests (no network)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.11']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile-check
+        run: python -m py_compile main.py semantic_diff_demo.py vlm_client.py vision_test.py
+      - name: Run pytest (no API key required)
+        env:
+          OPENAI_API_KEY: 'sk-test-placeholder'
+        run: pytest tests/ -v

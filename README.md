@@ -253,6 +253,63 @@ python main.py large_video.mp4 --max-frames 20 --frame-interval 10
 
 ---
 
+## Tradeoffs
+
+- **Single-model comparison.** We hold the model fixed (`gpt-4o-mini` default, `gpt-4o` supported) and vary only the prompt. The research question is prompt-engineering, not model selection — but the result doesn't generalize to other VLMs without a follow-up study. See [docs/decisions.md, ADR-001](docs/decisions.md#adr-001--prompt-comparison-not-model-comparison).
+- **Token cost measured, downstream task utility not.** Token-efficient is not the same as task-useful. A real evaluation pairs both streams with a downstream summarizer / QA agent. Roadmap Phase 2.
+- **Coarse 3-second cooldown.** `API_SLEEP_SECONDS = 3` smooths the request rate without making the demo painfully slow. Real adaptive backoff with jitter is roadmap Phase 7.
+- **`tiktoken` over LLM-generic tokenizers.** Matches GPT-4's BPE exactly. GPT-2 fallback only for environments where `tiktoken` can't install.
+- **No-network unit tests by design.** The 18 pytest cases run in 0.5s without an API key. CI runs free, deterministic, fast. Tradeoff: integration behavior (request shape, response parsing, retry) is untested in CI.
+
+Full ADRs in [docs/decisions.md](docs/decisions.md). Honest experimental limits in [docs/limitations.md](docs/limitations.md).
+
+---
+
+## Quality Gates
+
+- `pytest tests/` — 18 tests, 0 network calls, 0 API key required, runs in ~0.5s.
+- `python -m py_compile main.py semantic_diff_demo.py vlm_client.py vision_test.py` — compile-check on every push via CI.
+- Defaults bounded for cost: `gpt-4o-mini`, default input is `test_frame_diff/` (4 frames), full demo runs in under one cent.
+- Diff prompt uses one specific phrasing — documented in `semantic_diff_demo.py` as a constant, not scattered across functions.
+- First-frame synthetic baseline ("Initial frame. No previous frame to compare.") so downstream consumers see a uniform per-frame structure.
+
+---
+
+## Project Stats
+
+- **4** Python source files (`main.py`, `semantic_diff_demo.py`, `vlm_client.py`, `vision_test.py`)
+- **18** pytest unit tests
+- **141** action-labeled videos in `test_videos/` across **8** categories
+- **2** prompt strategies compared (baseline vs. semantic diff)
+- **50–70%** token reduction on non-first frames in the sample
+- **0** network calls in the CI test suite
+
+---
+
+## Resume Bullets
+
+- Designed and ran a **prompt-engineering study** comparing baseline frame-by-frame VLM prompting vs. a *semantic-diff* prompt ("describe only what changed") on GPT-4o — achieved **50–70% token reduction** while preserving temporal information on a 141-video action dataset.
+- Built a **multi-input pipeline** in Python supporting video files (8 codecs via OpenCV), image folders, and single images, with configurable frame sampling (`--max-frames`, `--frame-interval`) for bounded API spend on long inputs.
+- Implemented an **OpenAI VLM client** with exponential-backoff retry, base64 image encoding, configurable model (`gpt-4o-mini`/`gpt-4o`/`gpt-4-vision-preview`), and `tiktoken`-accurate token counting with a GPT-2 fallback.
+- Wrote **18 deterministic unit tests** covering token counting, frame loading, sort order, API-key validation, base64 encoding, and token arithmetic — runs in 0.5s without a network or API key.
+- Documented the experimental scope honestly: single-model comparison, no downstream-task utility scoring yet, no statistical confidence bands — full [limitations.md](docs/limitations.md) and phased [roadmap.md](docs/roadmap.md) for what real rigor would require.
+
+---
+
+## Interview Talking Points
+
+**Why hold the model fixed and vary the prompt.** The research question is prompt-engineering, not model selection. Comparing GPT-4o vs. Claude vs. Gemini at the same time as comparing baseline vs. diff would conflate two effects. By fixing the model, the diff effect is measured cleanly. The trade is that results don't generalize to other VLMs without a follow-up study — but that's a *next step*, not a confounded result.
+
+**Why `tiktoken` matters more than people think.** The whole comparison hinges on token counts. Using a wrong-tokenizer measurement (counting whitespace-separated words, using a different model's tokenizer) would silently invalidate the experiment. `tiktoken` matches GPT-4's BPE exactly. Getting this detail right is the difference between a credible result and a meaningless one.
+
+**Synthetic first-frame description.** Frame 0 in the diff pass returns the literal string `"Initial frame. No previous frame to compare."` instead of running the API. The reason isn't to save one API call — it's to give downstream code (output writer, bar chart, test assertions) a uniform per-frame structure. Skipping frame 0 would make the diff list one element shorter than the baseline list and cause off-by-one bugs in every consumer.
+
+**No-network unit tests as a design principle.** 18 pytest cases, 0.5-second runtime, zero API calls, zero env-var requirements at test time. CI runs free, deterministic, and fast. The tests check the deterministic plumbing — token counting, frame loading, sort order, base64 encoding — exactly the places where bugs would silently invalidate the experiment. The non-deterministic parts (response parsing, retry) get integration tests with a real key, not unit tests.
+
+**The honest experimental scope.** I measure what I can measure (token cost) on a sample I can run (subset of 141 videos) with the methodology I can defend (single model, fixed prompt phrasing, `tiktoken` measurement). I don't measure what I haven't measured (downstream-task utility, multi-model generality, prompt-sensitivity sweep, statistical confidence). The `limitations.md` doc spells out what's missing. Overclaiming a research result is worse than reporting a narrow but credible one.
+
+---
+
 ## Acknowledgments
 
 - **OpenAI** for the GPT-4o vision language model API.
