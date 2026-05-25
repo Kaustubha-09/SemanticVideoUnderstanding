@@ -324,4 +324,4 @@ Course project for CS6180: Generative AI. Released for academic / portfolio use.
 
 ---
 
-**Author:** Kaustubha Eluri · [kaustubha.ev@gmail.com](mailto:kaustubha.ev@gmail.com) · [kaustubha-09.github.io](https://kaustubha-09.github.io) · [linkedin.com/in/kaustubha-ve](https://linkedin.com/in/kaustubha-ve)
+**Author:** Kaustubha Eluri · [kaustubha.ev@gmail.com](mailto:kaustubha.ev@gmail.com) · [kaustubha.vercel.app](https://kaustubha.vercel.app/) · [linkedin.com/in/kaustubha-ve](https://linkedin.com/in/kaustubha-ve)
